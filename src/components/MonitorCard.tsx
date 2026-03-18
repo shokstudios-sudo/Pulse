@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Monitor } from "@/types/monitor";
 import StatusLED from "./StatusLED";
 import LatencySparkline from "./LatencySparkline";

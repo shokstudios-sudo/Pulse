@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Monitor } from "@/types/monitor";
 import StatusLED from "./StatusLED";
 import LatencySparkline from "./LatencySparkline";
@@ -18,11 +19,13 @@ const statusLabels = {
 };
 
 const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
+  const navigate = useNavigate();
   const timeSince = Math.round((Date.now() - monitor.lastChecked.getTime()) / 1000);
 
   return (
     <motion.div
-      className="glass-card rim-highlight rounded-lg p-4 group relative"
+      className="glass-card rim-highlight rounded-lg p-4 group relative cursor-pointer"
+      onClick={() => navigate(`/monitor/${monitor.id}`)}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05, ease: [0.2, 0, 0, 1] }}
@@ -31,7 +34,7 @@ const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
       {/* Delete button */}
       {onDelete && (
         <button
-          onClick={() => onDelete(monitor.id)}
+          onClick={(e) => { e.stopPropagation(); onDelete(monitor.id); }}
           className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
           aria-label="Delete monitor"
         >

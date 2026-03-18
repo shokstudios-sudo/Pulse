@@ -1,16 +1,53 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Monitor } from "@/types/monitor";
+import { mockMonitors } from "@/data/mockMonitors";
+import AppSidebar from "@/components/AppSidebar";
+import DashboardHeader from "@/components/DashboardHeader";
+import MonitorCard from "@/components/MonitorCard";
+import AddMonitorDialog from "@/components/AddMonitorDialog";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  const [monitors, setMonitors] = useState<Monitor[]>(mockMonitors);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleAddMonitor = (name: string, url: string) => {
+    const newMonitor: Monitor = {
+      id: String(Date.now()),
+      name,
+      url,
+      status: "up",
+      latency: 0,
+      latencyHistory: [],
+      uptime: 100,
+      uptimeHistory: Array(60).fill('up'),
+      lastChecked: new Date(),
+      checkInterval: 60,
+      location: "—",
+    };
+    setMonitors(prev => [...prev, newMonitor]);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background">
+      <AppSidebar onAddMonitor={() => setDialogOpen(true)} />
+
+      <main className="ml-16 p-8">
+        <DashboardHeader monitors={monitors} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {monitors.map((monitor, i) => (
+            <MonitorCard key={monitor.id} monitor={monitor} index={i} />
+          ))}
+        </div>
+      </main>
+
+      <AddMonitorDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onAdd={handleAddMonitor}
+      />
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;

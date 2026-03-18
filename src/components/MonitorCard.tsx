@@ -19,11 +19,13 @@ const statusLabels = {
 };
 
 const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
+  const navigate = useNavigate();
   const timeSince = Math.round((Date.now() - monitor.lastChecked.getTime()) / 1000);
 
   return (
     <motion.div
-      className="glass-card rim-highlight rounded-lg p-4 group relative"
+      className="glass-card rim-highlight rounded-lg p-4 group relative cursor-pointer"
+      onClick={() => navigate(`/monitor/${monitor.id}`)}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05, ease: [0.2, 0, 0, 1] }}

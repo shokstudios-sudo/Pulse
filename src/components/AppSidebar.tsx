@@ -37,13 +37,13 @@ const AppSidebar = ({ onAddMonitor }: AppSidebarProps) => {
       
 
       {/* Add button */}
-      <button
-        onClick={onAddMonitor}
-        className="w-10 h-10 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center justify-center transition-colors"
-        title="Add Monitor">
-        
-        <Plus className="w-[18px] h-[18px]" />
-      </button>
+      
+
+
+
+
+
+      
     </div>);
 
 };

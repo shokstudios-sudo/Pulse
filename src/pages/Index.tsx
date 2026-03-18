@@ -1,31 +1,13 @@
 import { useState } from "react";
-import { Monitor } from "@/types/monitor";
-import { mockMonitors } from "@/data/mockMonitors";
 import AppSidebar from "@/components/AppSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import MonitorCard from "@/components/MonitorCard";
 import AddMonitorDialog from "@/components/AddMonitorDialog";
+import { useMonitors } from "@/hooks/useMonitors";
 
 const Index = () => {
-  const [monitors, setMonitors] = useState<Monitor[]>(mockMonitors);
+  const { monitors, addMonitor, deleteMonitor } = useMonitors();
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  const handleAddMonitor = (name: string, url: string) => {
-    const newMonitor: Monitor = {
-      id: String(Date.now()),
-      name,
-      url,
-      status: "up",
-      latency: 0,
-      latencyHistory: [],
-      uptime: 100,
-      uptimeHistory: Array(60).fill('up'),
-      lastChecked: new Date(),
-      checkInterval: 60,
-      location: "—",
-    };
-    setMonitors(prev => [...prev, newMonitor]);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,17 +16,34 @@ const Index = () => {
       <main className="ml-16 p-8">
         <DashboardHeader monitors={monitors} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {monitors.map((monitor, i) => (
-            <MonitorCard key={monitor.id} monitor={monitor} index={i} />
-          ))}
-        </div>
+        {monitors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-muted-foreground font-mono text-sm mb-2">No monitors yet</p>
+            <button
+              onClick={() => setDialogOpen(true)}
+              className="text-xs font-mono text-primary hover:underline"
+            >
+              + Add your first monitor
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {monitors.map((monitor, i) => (
+              <MonitorCard
+                key={monitor.id}
+                monitor={monitor}
+                index={i}
+                onDelete={deleteMonitor}
+              />
+            ))}
+          </div>
+        )}
       </main>
 
       <AddMonitorDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onAdd={handleAddMonitor}
+        onAdd={addMonitor}
       />
     </div>
   );

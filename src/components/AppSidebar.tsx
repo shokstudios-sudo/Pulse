@@ -6,11 +6,11 @@ interface AppSidebarProps {
 
 const AppSidebar = ({ onAddMonitor }: AppSidebarProps) => {
   const navItems = [
-    { icon: Activity, label: "Dashboard", active: true },
-    { icon: Globe, label: "Monitors" },
-    { icon: Bell, label: "Alerts" },
-    { icon: Settings, label: "Settings" },
-  ];
+  { icon: Activity, label: "Dashboard", active: true },
+  { icon: Globe, label: "Monitors" },
+  { icon: Bell, label: "Alerts" },
+  { icon: Settings, label: "Settings" }];
+
 
   return (
     <div className="fixed left-0 top-0 bottom-0 w-16 bg-sidebar border-r border-sidebar-border flex flex-col items-center py-4 z-50">
@@ -20,32 +20,32 @@ const AppSidebar = ({ onAddMonitor }: AppSidebarProps) => {
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col items-center gap-2 flex-1">
-        {navItems.map(({ icon: Icon, label, active }) => (
-          <button
-            key={label}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-              active 
-                ? 'bg-sidebar-accent text-foreground' 
-                : 'text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent'
-            }`}
-            title={label}
-          >
-            <Icon className="w-[18px] h-[18px]" />
-          </button>
-        ))}
-      </nav>
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
 
       {/* Add button */}
       <button
         onClick={onAddMonitor}
         className="w-10 h-10 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center justify-center transition-colors"
-        title="Add Monitor"
-      >
+        title="Add Monitor">
+        
         <Plus className="w-[18px] h-[18px]" />
       </button>
-    </div>
-  );
+    </div>);
+
 };
 
 export default AppSidebar;

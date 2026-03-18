@@ -34,7 +34,7 @@ const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
       {/* Delete button */}
       {onDelete && (
         <button
-          onClick={() => onDelete(monitor.id)}
+          onClick={(e) => { e.stopPropagation(); onDelete(monitor.id); }}
           className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
           aria-label="Delete monitor"
         >

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, ExternalLink, Clock, Activity, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -96,9 +96,38 @@ const MonitorDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { monitors } = useMonitors();
+  const [checks, setChecks] = useState<CheckRecord[]>([]);
+  const [checksLoading, setChecksLoading] = useState(true);
 
   const monitor = monitors.find((m) => m.id === id);
-  const checks = useMemo(() => (id ? loadChecks(id) : []), [id, monitor?.lastChecked]);
+
+  // Fetch checks from API
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setChecksLoading(true);
+    loadChecks(id).then((data) => {
+      if (!cancelled) {
+        setChecks(data);
+        setChecksLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) setChecksLoading(false);
+    });
+
+    // Refresh checks periodically
+    const interval = setInterval(() => {
+      loadChecks(id).then((data) => {
+        if (!cancelled) setChecks(data);
+      });
+    }, 15000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [id, monitor?.lastChecked]);
+
   const incidents = useMemo(() => deriveIncidents(checks), [checks]);
 
   const chartData = useMemo(
@@ -221,7 +250,9 @@ const MonitorDetail = () => {
             {/* Response time chart */}
             <TabsContent value="chart">
               <div className="glass-card rim-highlight rounded-lg p-4">
-                {chartData.length === 0 ? (
+                {checksLoading ? (
+                  <p className="text-muted-foreground text-xs font-mono text-center py-12">Loading...</p>
+                ) : chartData.length === 0 ? (
                   <p className="text-muted-foreground text-xs font-mono text-center py-12">No data yet</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
@@ -268,7 +299,9 @@ const MonitorDetail = () => {
             {/* Check history table */}
             <TabsContent value="history">
               <div className="glass-card rim-highlight rounded-lg overflow-hidden">
-                {checks.length === 0 ? (
+                {checksLoading ? (
+                  <p className="text-muted-foreground text-xs font-mono text-center py-12">Loading...</p>
+                ) : checks.length === 0 ? (
                   <p className="text-muted-foreground text-xs font-mono text-center py-12">No checks recorded</p>
                 ) : (
                   <Table>

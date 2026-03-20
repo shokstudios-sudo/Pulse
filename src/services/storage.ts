@@ -1,7 +1,12 @@
 import { Monitor } from "@/types/monitor";
-
-const MONITORS_KEY = "pulse_monitors";
-const CHECKS_KEY = "pulse_checks";
+import {
+  fetchMonitors as apiFetchMonitors,
+  createMonitor as apiCreateMonitor,
+  deleteMonitorApi,
+  fetchChecks as apiFetchChecks,
+  ApiMonitor,
+  ApiCheck,
+} from "./api";
 
 export interface CheckRecord {
   id: string;
@@ -11,47 +16,52 @@ export interface CheckRecord {
   latency: number;
 }
 
-export function loadMonitors(): Monitor[] {
-  try {
-    const raw = localStorage.getItem(MONITORS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return parsed.map((m: any) => ({
-      ...m,
-      lastChecked: new Date(m.lastChecked),
-    }));
-  } catch {
-    return [];
-  }
+function apiMonitorToMonitor(m: ApiMonitor): Monitor {
+  return {
+    id: m.id,
+    name: m.name,
+    url: m.url,
+    status: m.status,
+    latency: m.latency,
+    uptime: m.uptime,
+    latencyHistory: m.latencyHistory || [],
+    uptimeHistory: m.uptimeHistory || [],
+    lastChecked: m.lastChecked ? new Date(m.lastChecked) : new Date(),
+    checkInterval: m.checkInterval,
+    location: m.location,
+  };
 }
 
-export function saveMonitors(monitors: Monitor[]) {
-  localStorage.setItem(MONITORS_KEY, JSON.stringify(monitors));
+function apiCheckToRecord(c: ApiCheck): CheckRecord {
+  return {
+    id: c.id,
+    monitorId: c.monitorId,
+    timestamp: c.timestamp,
+    status: c.status,
+    latency: c.latency,
+  };
 }
 
-export function loadChecks(monitorId?: string): CheckRecord[] {
-  try {
-    const raw = localStorage.getItem(CHECKS_KEY);
-    if (!raw) return [];
-    const all: CheckRecord[] = JSON.parse(raw);
-    return monitorId ? all.filter((c) => c.monitorId === monitorId) : all;
-  } catch {
-    return [];
-  }
+export async function loadMonitors(): Promise<Monitor[]> {
+  const data = await apiFetchMonitors();
+  return data.map(apiMonitorToMonitor);
 }
 
-export function saveCheck(check: CheckRecord) {
-  const checks = loadChecks();
-  checks.push(check);
-  // Keep last 5000 check records total
-  const trimmed = checks.slice(-5000);
-  localStorage.setItem(CHECKS_KEY, JSON.stringify(trimmed));
+export async function addMonitor(
+  name: string,
+  url: string,
+  interval: number
+): Promise<Monitor> {
+  const data = await apiCreateMonitor(name, url, interval);
+  return apiMonitorToMonitor(data);
 }
 
-export function deleteMonitor(id: string) {
-  const monitors = loadMonitors().filter((m) => m.id !== id);
-  saveMonitors(monitors);
-  // Remove associated checks
-  const checks = loadChecks().filter((c) => c.monitorId !== id);
-  localStorage.setItem(CHECKS_KEY, JSON.stringify(checks));
+export async function deleteMonitor(id: string): Promise<void> {
+  await deleteMonitorApi(id);
+}
+
+export async function loadChecks(monitorId?: string): Promise<CheckRecord[]> {
+  if (!monitorId) return [];
+  const data = await apiFetchChecks(monitorId);
+  return data.map(apiCheckToRecord);
 }

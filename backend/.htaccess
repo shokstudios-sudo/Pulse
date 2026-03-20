@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# Handle API routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ api/$1.php [L,QSA]
+
+# Deny access to config
+<Files "config.php">
+    Deny from all
+</Files>
+
+# Deny access to cron
+<Files "cron.php">
+    Deny from all
+</Files>

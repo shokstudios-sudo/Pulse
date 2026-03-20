@@ -15,7 +15,7 @@ interface MonitorCardProps {
 const statusLabels = {
   up: "Operational",
   down: "Down",
-  slow: "Degraded",
+  slow: "Degraded"
 };
 
 const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
@@ -29,18 +29,18 @@ const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05, ease: [0.2, 0, 0, 1] }}
-      whileHover={{ y: -2, borderColor: "rgba(255,255,255,0.12)" }}
-    >
+      whileHover={{ y: -2, borderColor: "rgba(255,255,255,0.12)" }}>
+      
       {/* Delete button */}
-      {onDelete && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(monitor.id); }}
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
-          aria-label="Delete monitor"
-        >
+      {onDelete &&
+      <button
+        onClick={(e) => {e.stopPropagation();onDelete(monitor.id);}}
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+        aria-label="Delete monitor">
+        
           <Trash2 className="w-3.5 h-3.5" />
         </button>
-      )}
+      }
 
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -48,7 +48,7 @@ const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
           <StatusLED status={monitor.status} />
           <span className="text-sm font-medium text-foreground tracking-tight">{monitor.name}</span>
         </div>
-        <span className="text-xs text-muted-foreground font-mono font-tabular">{monitor.location}</span>
+        
       </div>
 
       {/* Metrics row */}
@@ -80,17 +80,17 @@ const MonitorCard = ({ monitor, index, onDelete }: MonitorCardProps) => {
       {/* Footer */}
       <div className="flex items-center justify-between">
         <span className={`text-xs font-mono ${
-          monitor.status === 'up' ? 'text-status-up' : 
-          monitor.status === 'down' ? 'text-status-down' : 'text-status-slow'
-        }`}>
+        monitor.status === 'up' ? 'text-status-up' :
+        monitor.status === 'down' ? 'text-status-down' : 'text-status-slow'}`
+        }>
           {statusLabels[monitor.status]}
         </span>
         <span className="text-xs text-muted-foreground font-mono font-tabular">
           {timeSince}s ago
         </span>
       </div>
-    </motion.div>
-  );
+    </motion.div>);
+
 };
 
 export default MonitorCard;

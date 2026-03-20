@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# Protect config and cron from web access
+<FilesMatch "(config\.php|cron\.php|schema\.sql)">
+    Deny from all
+</FilesMatch>

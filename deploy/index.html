@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulse — Uptime Monitor</title>
+<meta name="description" content="Self-hosted uptime monitoring dashboard">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --up: #22c55e;
+    --down: #ef4444;
+    --slow: #f59e0b;
+    --primary: #3b82f6;
+    --radius: 10px;
+    --mono: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--mono); font-size:13px; min-height:100vh; }
+  a { color:var(--primary); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+
+  .container { max-width:1100px; margin:0 auto; padding:32px 24px; }
+
+  /* Header */
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
+  .header h1 { font-size:20px; font-weight:600; letter-spacing:-0.5px; }
+  .header span { color:var(--muted); font-size:11px; margin-left:8px; }
+
+  /* Stats bar */
+  .stats { display:flex; gap:32px; margin-bottom:32px; flex-wrap:wrap; }
+  .stat-item p:first-child { font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+  .stat-item p:last-child { font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .stat-up { color:var(--up); }
+  .stat-down { color:var(--down); }
+  .stat-slow { color:var(--slow); }
+
+  /* Buttons */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:var(--mono); font-size:12px; cursor:pointer; transition:all .15s; }
+  .btn:hover { border-color:var(--primary); background:#1a2332; }
+  .btn:active { transform:scale(0.97); }
+  .btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .btn-primary:hover { background:#2563eb; }
+  .btn-danger { color:var(--down); }
+  .btn-danger:hover { border-color:var(--down); background:rgba(239,68,68,0.08); }
+
+  /* Card grid */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+
+  /* Monitor card */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:box-shadow .2s, border-color .2s; position:relative; }
+  .card:hover { border-color:#334155; box-shadow:0 4px 24px rgba(0,0,0,0.3); }
+  .card-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .card-actions { position:absolute; top:16px; right:16px; display:flex; gap:6px; }
+
+  /* Status LED */
+  .led { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .led-up { background:var(--up); box-shadow:0 0 8px var(--up); }
+  .led-down { background:var(--down); box-shadow:0 0 8px var(--down); animation:pulse-led 1.5s infinite; }
+  .led-slow { background:var(--slow); box-shadow:0 0 8px var(--slow); }
+  @keyframes pulse-led { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .card-name { font-size:14px; font-weight:500; }
+  .card-url { font-size:11px; color:var(--muted); margin-top:2px; word-break:break-all; }
+
+  /* Card stats row */
+  .card-stats { display:flex; gap:24px; margin-top:12px; }
+  .card-stat label { font-size:10px; color:var(--muted); display:block; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.4px; }
+  .card-stat span { font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; }
+
+  /* Uptime bar */
+  .uptime-bar { display:flex; gap:2px; margin-top:14px; height:20px; }
+  .uptime-bar .bar { flex:1; border-radius:3px; min-width:3px; }
+  .bar-up { background:var(--up); }
+  .bar-down { background:var(--down); }
+  .bar-slow { background:var(--slow); }
+  .bar-empty { background:var(--border); }
+
+  /* Sparkline */
+  .sparkline { margin-top:12px; height:32px; }
+
+  /* Modal */
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); display:none; z-index:100; align-items:center; justify-content:center; }
+  .overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; width:100%; max-width:420px; }
+  .modal h2 { font-size:14px; font-weight:600; margin-bottom:20px; }
+  .field { margin-bottom:16px; }
+  .field label { font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px; }
+  .field input, .field select { width:100%; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--mono); font-size:13px; outline:none; }
+  .field input:focus, .field select:focus { border-color:var(--primary); }
+
+  /* Empty state */
+  .empty { text-align:center; padding:80px 20px; color:var(--muted); }
+  .empty p { margin-bottom:8px; }
+
+  /* Loading */
+  .loading { text-align:center; padding:60px; color:var(--muted); }
+
+  /* Badge */
+  .badge { font-size:11px; padding:3px 8px; border-radius:6px; font-weight:500; }
+  .badge-up { background:rgba(34,197,94,0.1); color:var(--up); }
+  .badge-down { background:rgba(239,68,68,0.1); color:var(--down); }
+  .badge-slow { background:rgba(245,158,11,0.1); color:var(--slow); }
+
+  @media (max-width:640px) {
+    .container { padding:16px; }
+    .grid { grid-template-columns:1fr; }
+    .stats { gap:16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div style="display:flex;align-items:baseline;gap:4px;">
+      <h1>Pulse</h1>
+      <span>v1.0</span>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ Add Monitor</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div id="monitors" class="loading">Loading monitors...</div>
+</div>
+
+<!-- Add Monitor Modal -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <h2>Add New Monitor</h2>
+    <form id="addForm" onsubmit="return addMonitor(event)">
+      <div class="field">
+        <label>Name</label>
+        <input id="f-name" placeholder="api.example.com" required>
+      </div>
+      <div class="field">
+        <label>URL</label>
+        <input id="f-url" value="https://" placeholder="https://api.example.com" required>
+      </div>
+      <div class="field">
+        <label>Check Interval</label>
+        <select id="f-interval">
+          <option value="5">5 seconds</option>
+          <option value="10">10 seconds</option>
+          <option value="30">30 seconds</option>
+          <option value="60" selected>1 minute</option>
+          <option value="300">5 minutes</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Begin Monitoring</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const API = 'api';
+let monitors = [];
+
+function openModal() { document.getElementById('modal').classList.add('open'); document.getElementById('f-name').focus(); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+async function fetchMonitors() {
+  try {
+    const r = await fetch(`${API}/monitors.php`);
+    monitors = await r.json();
+    render();
+  } catch(e) { document.getElementById('monitors').innerHTML = '<div class="empty"><p>Failed to connect to backend</p><p style="font-size:11px">Check config.php database settings</p></div>'; }
+}
+
+function render() {
+  const el = document.getElementById('monitors');
+  const statsEl = document.getElementById('stats');
+
+  if (!monitors.length) {
+    el.innerHTML = '<div class="empty"><p>No monitors yet</p><button class="btn btn-primary" onclick="openModal()">+ Add your first monitor</button></div>';
+    statsEl.innerHTML = '';
+    return;
+  }
+
+  const up = monitors.filter(m => m.status === 'up').length;
+  const down = monitors.filter(m => m.status === 'down').length;
+  const slow = monitors.filter(m => m.status === 'slow').length;
+  const active = monitors.filter(m => m.status !== 'down');
+  const avg = active.length ? Math.round(active.reduce((a,m) => a + m.latency, 0) / active.length) : 0;
+
+  statsEl.innerHTML = `
+    <div class="stat-item"><p>Monitors</p><p>${monitors.length}</p></div>
+    <div class="stat-item"><p>Operational</p><p class="stat-up">${up}</p></div>
+    ${down ? `<div class="stat-item"><p>Down</p><p class="stat-down">${down}</p></div>` : ''}
+    ${slow ? `<div class="stat-item"><p>Degraded</p><p class="stat-slow">${slow}</p></div>` : ''}
+    <div class="stat-item"><p>Avg Latency</p><p>${avg}ms</p></div>
+  `;
+
+  el.className = 'grid';
+  el.innerHTML = monitors.map(m => `
+    <div class="card">
+      <div class="card-actions">
+        <a href="detail.php?id=${m.id}" class="btn" style="padding:5px 10px;font-size:11px;">View</a>
+        <button class="btn btn-danger" style="padding:5px 10px;font-size:11px;" onclick="deleteMon('${m.id}')">✕</button>
+      </div>
+      <div class="card-header">
+        <div class="led led-${m.status}"></div>
+        <div>
+          <div class="card-name">${esc(m.name)}</div>
+          <div class="card-url">${esc(m.url)}</div>
+        </div>
+      </div>
+      <div class="card-stats">
+        <div class="card-stat"><label>Status</label><span class="badge badge-${m.status}">${m.status === 'up' ? 'Operational' : m.status === 'down' ? 'Down' : 'Degraded'}</span></div>
+        <div class="card-stat"><label>Latency</label><span>${m.status === 'down' ? '—' : m.latency + 'ms'}</span></div>
+        <div class="card-stat"><label>Uptime</label><span>${Number(m.uptime).toFixed(1)}%</span></div>
+      </div>
+      ${renderUptimeBar(m.uptimeHistory)}
+      ${renderSparkline(m.latencyHistory)}
+    </div>
+  `).join('');
+}
+
+function renderUptimeBar(history) {
+  if (!history || !history.length) {
+    const bars = Array(30).fill('<div class="bar bar-empty"></div>').join('');
+    return `<div class="uptime-bar">${bars}</div>`;
+  }
+  const bars = history.slice(-30).map(s => `<div class="bar bar-${s}"></div>`).join('');
+  return `<div class="uptime-bar">${bars}</div>`;
+}
+
+function renderSparkline(data) {
+  if (!data || data.length < 2) return '';
+  const w = 280, h = 32, max = Math.max(...data, 1);
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * (h - 4)}`).join(' ');
+  return `<div class="sparkline"><svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--up)" stroke-width="1.5" stroke-linejoin="round"/></svg></div>`;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+async function addMonitor(e) {
+  e.preventDefault();
+  const name = document.getElementById('f-name').value.trim();
+  const url = document.getElementById('f-url').value.trim();
+  const interval = document.getElementById('f-interval').value;
+  if (!name || !url) return;
+  await fetch(`${API}/monitors.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, url, checkInterval:Number(interval)}) });
+  closeModal();
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-url').value = 'https://';
+  fetchMonitors();
+  return false;
+}
+
+async function deleteMon(id) {
+  if (!confirm('Delete this monitor and all its check history?')) return;
+  await fetch(`${API}/monitors.php?id=${id}`, {method:'DELETE'});
+  fetchMonitors();
+}
+
+// Initial load + auto-refresh
+fetchMonitors();
+setInterval(fetchMonitors, 10000);
+</script>
+</body>
+</html>

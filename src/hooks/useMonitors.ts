@@ -1,108 +1,61 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Monitor } from "@/types/monitor";
-import { loadMonitors, saveMonitors, deleteMonitor as removeMonitor } from "@/services/storage";
-import { pingMonitor, createCheckRecord, computeMonitorStats } from "@/services/pinger";
+import {
+  loadMonitors,
+  addMonitor as storageAddMonitor,
+  deleteMonitor as storageDeleteMonitor,
+} from "@/services/storage";
+
+const REFRESH_INTERVAL = 10000; // Refresh UI every 10 seconds
 
 export function useMonitors() {
-  const [monitors, setMonitors] = useState<Monitor[]>(() => loadMonitors());
-  const intervalsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const [monitors, setMonitors] = useState<Monitor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Persist whenever monitors change
-  useEffect(() => {
-    saveMonitors(monitors);
-  }, [monitors]);
-
-  const runCheck = useCallback(async (monitor: Monitor) => {
-    const { status, latency } = await pingMonitor(monitor);
-    createCheckRecord(monitor.id, status, latency);
-    const stats = computeMonitorStats(monitor.id);
-
-    setMonitors((prev) =>
-      prev.map((m) =>
-        m.id === monitor.id
-          ? {
-              ...m,
-              status,
-              latency,
-              lastChecked: new Date(),
-              latencyHistory: stats.latencyHistory,
-              uptimeHistory: stats.uptimeHistory,
-              uptime: Math.round(stats.uptime * 100) / 100,
-            }
-          : m
-      )
-    );
-  }, []);
-
-  const startPolling = useCallback(
-    (monitor: Monitor) => {
-      // Run immediately
-      runCheck(monitor);
-      // Then at interval
-      const id = setInterval(() => {
-        // Get fresh monitor state from current monitors
-        setMonitors((prev) => {
-          const current = prev.find((m) => m.id === monitor.id);
-          if (current) runCheck(current);
-          return prev;
-        });
-      }, monitor.checkInterval * 1000);
-      intervalsRef.current.set(monitor.id, id);
-    },
-    [runCheck]
-  );
-
-  const stopPolling = useCallback((monitorId: string) => {
-    const id = intervalsRef.current.get(monitorId);
-    if (id) {
-      clearInterval(id);
-      intervalsRef.current.delete(monitorId);
+  const fetchData = useCallback(async () => {
+    try {
+      const data = await loadMonitors();
+      setMonitors(data);
+    } catch (err) {
+      console.error("Failed to fetch monitors:", err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // Start polling for all monitors on mount
+  // Initial load + periodic refresh
   useEffect(() => {
-    monitors.forEach((m) => {
-      if (!intervalsRef.current.has(m.id)) {
-        startPolling(m);
-      }
-    });
+    fetchData();
+    intervalRef.current = setInterval(fetchData, REFRESH_INTERVAL);
     return () => {
-      intervalsRef.current.forEach((id) => clearInterval(id));
-      intervalsRef.current.clear();
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchData]);
 
   const addMonitor = useCallback(
-    (name: string, url: string, interval: number = 60) => {
-      const newMonitor: Monitor = {
-        id: `mon_${Date.now()}`,
-        name,
-        url,
-        status: "up",
-        latency: 0,
-        latencyHistory: [],
-        uptime: 100,
-        uptimeHistory: [],
-        lastChecked: new Date(),
-        checkInterval: interval,
-        location: "Local",
-      };
-      setMonitors((prev) => [...prev, newMonitor]);
-      startPolling(newMonitor);
+    async (name: string, url: string, interval: number = 60) => {
+      try {
+        const newMonitor = await storageAddMonitor(name, url, interval);
+        setMonitors((prev) => [...prev, newMonitor]);
+      } catch (err) {
+        console.error("Failed to add monitor:", err);
+      }
     },
-    [startPolling]
+    []
   );
 
   const deleteMonitor = useCallback(
-    (id: string) => {
-      stopPolling(id);
-      removeMonitor(id);
-      setMonitors((prev) => prev.filter((m) => m.id !== id));
+    async (id: string) => {
+      try {
+        await storageDeleteMonitor(id);
+        setMonitors((prev) => prev.filter((m) => m.id !== id));
+      } catch (err) {
+        console.error("Failed to delete monitor:", err);
+      }
     },
-    [stopPolling]
+    []
   );
 
-  return { monitors, addMonitor, deleteMonitor, runCheck };
+  return { monitors, loading, addMonitor, deleteMonitor };
 }

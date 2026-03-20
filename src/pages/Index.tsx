@@ -6,7 +6,7 @@ import AddMonitorDialog from "@/components/AddMonitorDialog";
 import { useMonitors } from "@/hooks/useMonitors";
 
 const Index = () => {
-  const { monitors, addMonitor, deleteMonitor } = useMonitors();
+  const { monitors, loading, addMonitor, deleteMonitor } = useMonitors();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (

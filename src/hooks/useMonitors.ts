@@ -75,7 +75,7 @@ export function useMonitors() {
   }, []);
 
   const addMonitor = useCallback(
-    (name: string, url: string) => {
+    (name: string, url: string, interval: number = 60) => {
       const newMonitor: Monitor = {
         id: `mon_${Date.now()}`,
         name,
@@ -86,7 +86,7 @@ export function useMonitors() {
         uptime: 100,
         uptimeHistory: [],
         lastChecked: new Date(),
-        checkInterval: 60,
+        checkInterval: interval,
         location: "Local",
       };
       setMonitors((prev) => [...prev, newMonitor]);

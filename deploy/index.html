@@ -12,9 +12,34 @@
 
 <div class="container">
   <div class="header">
+    <!-- Pulse Logo + Version -->
     <div class="header-title">
-      <h1>Pulse</h1>
-      <span>v1.0</span>
+      <!-- Animated Pulse Logo -->
+      <svg width="130" height="32" viewBox="0 0 120 32" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#22c55e"/>
+            <stop offset="50%" stop-color="#4ade80"/>
+            <stop offset="100%" stop-color="#22c55e"/>
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <!-- Animated heartbeat line -->
+        <g class="pulse-line">
+          <path d="M 8 16 L 16 8 L 24 20 L 32 12 L 40 24 L 48 10 L 56 22 L 64 14 L 72 18" 
+                fill="none" stroke="url(#pulseGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+        </g>
+        <!-- PULSE text -->
+        <text x="76" y="22" font-family="'DM Sans', sans-serif" font-size="18" font-weight="600" 
+              fill="#e2e8f0" letter-spacing="-0.5px">PULSE</text>
+      </svg>
+      <span>v1.11</span>
     </div>
     <button class="btn btn-primary" onclick="openModal()">+ Add Monitor</button>
   </div>
@@ -62,6 +87,25 @@ function openModal() { document.getElementById('modal').classList.add('open'); d
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
 document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
+// Add pulse animation CSS dynamically
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse-glow {
+    0%, 100% { 
+      stroke-opacity: 1; 
+      stroke-width: 2;
+    }
+    50% { 
+      stroke-opacity: 0.6; 
+      stroke-width: 3;
+    }
+  }
+  .pulse-line {
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+`;
+document.head.appendChild(style);
+
 async function fetchMonitors() {
   try {
     const r = await fetch(`${API}/monitors.php`);
@@ -105,7 +149,7 @@ function render() {
         <div class="led led-${m.status}"></div>
         <div>
           <div class="card-name">${esc(m.name)}</div>
-          <div class="card-url">${esc(m.url)}</div>
+          <div class="card-url" title="${m.url || ''}">${(m.url || '').replace(/^https?:\/\//i, '').substring(0, 40)}${(m.url || '').length > 40 ? '...' : ''}</div>
         </div>
       </div>
       <div class="card-stats">

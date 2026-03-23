@@ -2,9 +2,10 @@
 
 A real-time uptime monitoring dashboard built with React + PHP + MySQL.
 
-<img width="1278" height="914" alt="Screenshot 2026-03-23 at 12-41-33 Pulse — Uptime Monitor" src="https://github.com/user-attachments/assets/b7bf372a-356f-466f-ac29-150686feabc9" />
+<img width="1278" height="914" alt="Screenshot 2026-03-23 at 17-06-10 Pulse — Uptime Monitor" src="https://github.com/user-attachments/assets/f668bfb6-5cc0-4778-90c5-950a1349b44c" />
 
-<img width="1278" height="914" alt="Screenshot 2026-03-23 at 12-41-46 Monitor Detail — Pulse" src="https://github.com/user-attachments/assets/736e2c07-5290-42b0-856c-5f3c13d8b468" />
+<img width="1278" height="914" alt="Screenshot 2026-03-23 at 17-06-23 Monitor Detail — Pulse" src="https://github.com/user-attachments/assets/1ffa207e-b47c-41bd-a38b-af96f1e27074" />
+
 
 ## Architecture
 
